@@ -1,0 +1,983 @@
+
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#f5f5f7">
+<title>Transit</title>
+
+<style>
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  padding: 24px 16px 40px;
+  background: #f5f5f7;
+  color: #1c1c1e;
+  font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue",
+    "Noto Sans JP", sans-serif;
+}
+
+.container { max-width: 520px; margin: 0 auto; }
+header { margin: 12px 0 24px; }
+
+.logo {
+  font-size: 13px;
+  font-weight: 700;
+  color: #777;
+  letter-spacing: 1.5px;
+}
+
+h1 {
+  margin: 6px 0;
+  font-size: 34px;
+  letter-spacing: -1px;
+}
+
+.subtitle { color: #888; font-size: 14px; }
+
+.panel, .detail-panel {
+  background: white;
+  border-radius: 22px;
+  padding: 20px;
+  box-shadow: 0 4px 20px rgba(0,0,0,.04);
+  margin-bottom: 18px;
+}
+
+.field-label {
+  display: block;
+  font-size: 12px;
+  color: #888;
+  font-weight: 700;
+  margin-bottom: 7px;
+}
+
+.route-field {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 14px;
+  border: 1px solid #e8e8eb;
+  border-radius: 13px;
+  margin-bottom: 12px;
+  background: #fafafa;
+}
+
+.route-field .dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #3478f6;
+  flex-shrink: 0;
+}
+
+.route-field.destination .dot { background: #24a36b; }
+
+.route-field input {
+  width: 100%;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  font-size: 17px;
+  font-weight: 600;
+  color: #222;
+  min-width: 0;
+}
+
+input, select, button { font-family: inherit; }
+
+.swap-row {
+  display: flex;
+  justify-content: flex-end;
+  margin: -3px 0 10px;
+}
+
+.swap-button {
+  border: 1px solid #e5e5e8;
+  background: #fff;
+  color: #3478f6;
+  border-radius: 20px;
+  padding: 7px 13px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.autocomplete-wrap {
+  position: relative;
+  margin-bottom: 12px;
+}
+
+.autocomplete-wrap .route-field { margin-bottom: 0; }
+
+.suggestions {
+  display: none;
+  position: absolute;
+  top: calc(100% + 5px);
+  left: 0;
+  right: 0;
+  z-index: 100;
+  background: white;
+  border: 1px solid #e5e5e8;
+  border-radius: 13px;
+  box-shadow: 0 5px 18px rgba(0,0,0,.10);
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.suggestions button {
+  display: block;
+  width: 100%;
+  padding: 13px 15px;
+  border: 0;
+  border-bottom: 1px solid #f0f0f0;
+  background: white;
+  text-align: left;
+  font-size: 15px;
+  color: #222;
+}
+
+.suggestions button:last-child { border-bottom: 0; }
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.form-group { min-width: 0; }
+
+.form-group input, .form-group select {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #e5e5e8;
+  border-radius: 12px;
+  background: #fafafa;
+  color: #222;
+  font-size: 15px;
+  outline: none;
+}
+
+.search-button, .official-button {
+  display: block;
+  width: 100%;
+  margin-top: 18px;
+  padding: 16px;
+  border: 0;
+  border-radius: 14px;
+  background: #3478f6;
+  color: white;
+  font-size: 16px;
+  font-weight: 700;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.search-button:active, .official-button:active { opacity: .8; }
+
+.section-title {
+  font-size: 18px;
+  font-weight: 750;
+  margin: 24px 2px 12px;
+}
+
+.condition {
+  color: #888;
+  font-size: 12px;
+  margin: 0 2px 12px;
+  line-height: 1.7;
+}
+
+.trip {
+  background: white;
+  border-radius: 18px;
+  padding: 17px;
+  margin-bottom: 12px;
+  box-shadow: 0 3px 14px rgba(0,0,0,.035);
+}
+
+.trip-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.time {
+  font-size: 25px;
+  font-weight: 750;
+  letter-spacing: -.5px;
+}
+
+.arrival {
+  color: #777;
+  font-size: 13px;
+  text-align: right;
+}
+
+.trip-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 0;
+  color: #888;
+  font-size: 12px;
+}
+
+.line { height: 1px; flex: 1; background: #e5e5e8; }
+
+.tags { display: flex; flex-wrap: wrap; gap: 7px; }
+
+.tag {
+  padding: 5px 9px;
+  border-radius: 7px;
+  background: #f1f3f6;
+  color: #555;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.tag.blue { color: #2466d1; background: #eaf1ff; }
+.tag.green { color: #168451; background: #e8f7ef; }
+
+.no-result {
+  background: white;
+  border-radius: 18px;
+  padding: 22px 18px;
+  color: #777;
+  font-size: 14px;
+  line-height: 1.8;
+}
+
+.no-result strong { color: #222; }
+
+.official-button {
+  background: #202124;
+  margin-top: 14px;
+  font-size: 14px;
+  padding: 14px;
+}
+
+.detail-panel {
+  margin: 18px 0;
+  scroll-margin-top: 20px;
+}
+
+.detail-panel h2 { margin-top: 0; font-size: 20px; }
+
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid #eee;
+  font-size: 14px;
+}
+
+.detail-row:last-child { border-bottom: 0; }
+.detail-label { color: #888; }
+.detail-value { font-weight: 700; text-align: right; }
+
+.notice {
+  margin-top: 20px;
+  color: #999;
+  font-size: 11px;
+  line-height: 1.8;
+}
+
+.notice a { color: #3478f6; text-decoration: none; }
+
+footer {
+  text-align: center;
+  color: #aaa;
+  font-size: 11px;
+  margin-top: 30px;
+}
+
+.small-note {
+  color: #999;
+  font-size: 11px;
+  line-height: 1.7;
+  margin-top: 12px;
+}
+</style>
+</head>
+
+<body>
+<div class="container">
+
+<header>
+  <div class="logo">KORIYAMA BUS NAVIGATION</div>
+  <h1>Transit</h1>
+  <div class="subtitle">郡山市内のバス時刻を検索</div>
+</header>
+
+<section class="panel">
+
+  <label class="field-label" for="from">出発地</label>
+  <div class="autocomplete-wrap">
+    <div class="route-field">
+      <span class="dot"></span>
+      <input id="from" value="御前" placeholder="出発地を入力" autocomplete="off">
+    </div>
+    <div class="suggestions" id="fromSuggestions"></div>
+  </div>
+
+  <div class="swap-row">
+    <button class="swap-button" type="button" onclick="swapStops()">
+      ⇅ 出発地と到着地を入れ替え
+    </button>
+  </div>
+
+  <label class="field-label" for="to">到着地</label>
+  <div class="autocomplete-wrap">
+    <div class="route-field destination">
+      <span class="dot"></span>
+      <input id="to" value="郡山駅前" placeholder="到着地を入力" autocomplete="off">
+    </div>
+    <div class="suggestions" id="toSuggestions"></div>
+  </div>
+
+  <div class="form-row">
+    <div class="form-group">
+      <label class="field-label" for="date">乗車日</label>
+      <input type="date" id="date">
+    </div>
+    <div class="form-group">
+      <label class="field-label" for="time">出発時刻</label>
+      <input type="time" id="time" value="07:00">
+    </div>
+  </div>
+
+  <div class="form-group" style="margin-top:14px">
+    <label class="field-label" for="serviceType">運行日</label>
+    <select id="serviceType">
+      <option value="weekday">平日</option>
+      <option value="holiday">土日祝</option>
+    </select>
+  </div>
+
+  <button class="search-button" onclick="searchRoute()">
+    バスを検索
+  </button>
+
+  <p class="small-note">
+    日付に合わせて平日・土日を自動選択します。祝日は必要に応じて「土日祝」に変更してください。
+  </p>
+</section>
+
+<div class="section-title">検索結果</div>
+<p class="condition" id="condition">御前 → 郡山駅前</p>
+<div id="tripList"></div>
+<div id="detailArea"></div>
+
+<div class="notice">
+  アプリ内の時刻データは確認が必要です。最新の運行情報は公式サイトで確認してください。<br>
+  <a href="https://www.fukushima-koutu.co.jp/" target="_blank" rel="noopener">
+    福島交通公式サイト
+  </a>
+</div>
+
+<footer>Transit - Koriyama</footer>
+</div>
+
+<script>
+// ===================================
+// 停留所候補
+// ===================================
+
+const busStops = [
+  "御前",
+  "郡山駅前",
+  "郡山駅東口",
+  "郡山駅前一丁目",
+  "郡山大町",
+  "郡山インター前",
+  "郡山運転免許センター",
+  "郡山北警察署",
+  "郡山北工業高校入口",
+  "郡山警察署",
+  "郡山公会堂",
+  "郡山高校",
+  "郡山国道事務所",
+  "郡山ザベリオ学園",
+  "郡山市上下水道局",
+  "郡山市美術館",
+  "郡山市保健所",
+  "郡山市役所",
+  "郡山商業高校",
+  "郡山女子大学",
+  "郡山中央図書館",
+  "郡山東高校",
+  "郡山ビッグハート",
+  "郡山郵便局",
+  "郡山ユラックス熱海",
+  "ザ・モール郡山",
+  "イオンタウン郡山",
+  "赤木小学校",
+  "赤木町",
+  "赤沼",
+  "阿久津",
+  "阿久戸",
+  "安子ヶ島",
+  "安子ヶ島上町",
+  "安子ヶ島寺前",
+  "安積荒井",
+  "安積行政センター",
+  "安積行政センター入口",
+  "安積行政センター南",
+  "安積高校",
+  "あさか台",
+  "あさか台上",
+  "あさか台北",
+  "安積団地",
+  "安積団地入口",
+  "安積二丁目",
+  "安積黎明高校",
+  "朝日一丁目",
+  "朝日二丁目",
+  "朝日三丁目",
+  "熱海荒町",
+  "熱海一丁目",
+  "熱海駅",
+  "熱海グランド前",
+  "熱海三丁目",
+  "熱海車庫",
+  "熱海中学校",
+  "熱海分署",
+  "あぶくま支援学校",
+  "あぶくま台団地",
+  "荒井",
+  "蟻塚",
+  "池ノ台",
+  "台新",
+  "希望ヶ丘",
+  "開成山",
+  "開成五丁目",
+  "虎丸",
+  "桑野三丁目",
+  "第六中学校",
+  "うすい入口",
+  "南タウン北",
+  "南タウン東",
+  "向陽台",
+  "柴宮団地",
+  "静団地",
+  "大槻",
+  "西ノ内",
+  "太田西ノ内病院前",
+  "南東北病院",
+  "宝沢レイクタウン",
+  "日和田",
+  "フェスタ",
+  "三春",
+  "百合ヶ丘",
+  "鎗ヶ池団地",
+  "コスモス循環",
+  "運転免許センター",
+  "カルチャーパーク",
+  "富久山",
+  "八山田",
+  "星総合病院",
+  "第三中学校",
+  "うねめ団地"
+];
+
+// ===================================
+// 入力候補
+// ===================================
+
+function setupAutocomplete(inputId, suggestionsId) {
+  const input = document.getElementById(inputId);
+  const area = document.getElementById(suggestionsId);
+
+  input.addEventListener("input", () => {
+    const keyword = input.value.trim();
+    area.innerHTML = "";
+
+    if (!keyword) {
+      area.style.display = "none";
+      return;
+    }
+
+    const matches = busStops.filter(stop =>
+      stop.includes(keyword)
+    ).slice(0, 10);
+
+    if (!matches.length) {
+      area.style.display = "none";
+      return;
+    }
+
+    matches.forEach(stop => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.textContent = stop;
+      button.addEventListener("click", () => {
+        input.value = stop;
+        area.style.display = "none";
+      });
+      area.appendChild(button);
+    });
+
+    area.style.display = "block";
+  });
+
+  input.addEventListener("keydown", event => {
+    if (event.key === "Escape") area.style.display = "none";
+  });
+}
+
+setupAutocomplete("from", "fromSuggestions");
+setupAutocomplete("to", "toSuggestions");
+
+document.addEventListener("click", event => {
+  document.querySelectorAll(".autocomplete-wrap").forEach(wrap => {
+    if (!wrap.contains(event.target)) {
+      wrap.querySelector(".suggestions").style.display = "none";
+    }
+  });
+});
+
+// ===================================
+// 出発地と到着地の入れ替え
+// ===================================
+
+function swapStops() {
+  const from = document.getElementById("from");
+  const to = document.getElementById("to");
+  const temp = from.value;
+  from.value = to.value;
+  to.value = temp;
+
+  document.getElementById("fromSuggestions").style.display = "none";
+  document.getElementById("toSuggestions").style.display = "none";
+  searchRoute();
+}
+
+// ===================================
+// 時刻表データ
+// ===================================
+
+const weekdayRaw = `
+06:21,06:46,池ノ台,1番,440,25,1-3
+06:55,07:20,池ノ台,1番,440,25,1-3
+07:17,07:50,市役所,1番,440,33,1-1
+07:21,07:51,池ノ台,1番,440,30,1-3
+07:38,08:20,コスモス循環希望ヶ丘,1番,480,42,1B
+07:42,08:20,コスモス循環台新,2番,440,38,1A
+07:53,08:35,希望ヶ丘,1番,480,42,1B
+08:08,08:43,台新,2番,440,35,1A
+08:10,08:43,市役所,1番,440,33,1-1
+08:33,09:10,希望ヶ丘,1番,480,37,1B
+08:40,09:10,台新,2番,440,30,1A
+09:03,09:40,希望ヶ丘,1番,480,37,1B
+09:10,09:40,台新,2番,440,30,1A
+09:22,09:50,市役所,1番,440,28,1-1
+09:33,10:10,希望ヶ丘,1番,480,37,1B
+09:50,10:20,台新,2番,440,30,1A
+10:03,10:40,希望ヶ丘,1番,480,37,1B
+10:20,10:50,台新,2番,440,30,1A
+10:22,10:50,市役所,1番,440,28,1-1
+10:33,11:10,希望ヶ丘,1番,480,37,1B
+10:50,11:20,台新,2番,440,30,1A
+11:03,11:40,希望ヶ丘,1番,480,37,1B
+11:20,11:50,台新,2番,440,30,1A
+11:22,11:50,市役所,1番,440,28,1-1
+11:33,12:10,希望ヶ丘,1番,480,37,1B
+11:50,12:20,台新,2番,440,30,1A
+12:03,12:40,希望ヶ丘,1番,480,37,1B
+12:20,12:50,台新,2番,440,30,1A
+12:22,12:50,市役所,1番,440,28,1-1
+12:33,13:10,希望ヶ丘,1番,480,37,1B
+12:50,13:20,台新,2番,440,30,1A
+13:03,13:40,希望ヶ丘,1番,480,37,1B
+13:20,13:50,台新,2番,440,30,1A
+13:22,13:50,市役所,1番,440,28,1-1
+13:33,14:10,希望ヶ丘,1番,480,37,1B
+13:50,14:20,台新,2番,440,30,1A
+14:03,14:40,希望ヶ丘,1番,480,37,1B
+14:20,14:50,台新,2番,440,30,1A
+14:33,15:10,希望ヶ丘,1番,480,37,1B
+14:50,15:20,台新,2番,440,30,1A
+15:03,15:40,希望ヶ丘,1番,480,37,1B
+15:20,15:50,台新,2番,440,30,1A
+15:22,15:50,市役所,1番,440,28,1-1
+16:06,16:43,希望ヶ丘,1番,480,37,1B
+16:20,16:50,台新,2番,440,30,1A
+16:25,16:53,市役所,1番,440,28,1-1
+17:06,17:48,希望ヶ丘,1番,480,42,1B
+17:24,17:55,台新,2番,440,31,1A
+17:25,17:58,市役所,1番,440,33,1-1
+18:09,18:40,台新,2番,440,31,1A
+18:10,18:52,希望ヶ丘,1番,480,42,1B
+18:14,18:47,市役所,1番,440,33,1-1
+19:08,19:45,希望ヶ丘,1番,480,37,1B
+19:25,19:55,台新,2番,440,30,1A
+20:03,20:40,希望ヶ丘,1番,480,37,1B
+20:10,20:37,台新,2番,440,27,1A
+21:03,21:35,希望ヶ丘,1番,480,32,1B
+21:06,21:30,台新,2番,440,24,1A
+`;
+
+const holidayRaw = `
+06:26,06:51,池ノ台,1番,440,25,1-3,1
+07:38,08:07,台新,2番,440,29,1A,1
+07:43,08:17,希望ヶ丘,1番,480,34,1B,1
+08:10,08:35,池ノ台,1番,440,25,1-3,1
+08:17,08:45,市役所,1番,440,28,1-1,1
+08:33,09:07,希望ヶ丘,1番,480,34,1B
+08:55,09:25,台新,2番,440,30,1A
+09:43,10:20,希望ヶ丘,1番,480,37,1B
+09:45,10:15,台新,2番,440,30,1A
+09:52,10:20,市役所,1番,440,28,1-1
+10:30,11:00,台新,2番,440,30,1A
+11:03,11:40,希望ヶ丘,1番,480,37,1B
+11:22,11:50,市役所,1番,440,28,1-1
+11:50,12:20,台新,2番,440,30,1A
+12:33,13:10,希望ヶ丘,1番,480,37,1B
+12:50,13:20,台新,2番,440,30,1A
+12:55,13:23,市役所,1番,440,28,1-1
+13:18,13:55,希望ヶ丘,1番,480,37,1B
+13:30,14:00,台新,2番,440,30,1A
+14:03,14:40,希望ヶ丘,1番,480,37,1B
+14:25,14:53,市役所,1番,440,28,1-1
+14:48,15:25,希望ヶ丘,1番,480,37,1B
+15:00,15:30,台新,2番,440,30,1A
+15:50,16:20,台新,2番,440,30,1A
+15:55,16:23,市役所,1番,440,28,1-1
+16:16,16:53,希望ヶ丘,1番,480,37,1B
+16:30,17:00,台新,2番,440,30,1A
+17:06,17:43,希望ヶ丘,1番,480,37,1B
+17:25,17:53,市役所,1番,440,28,1-1
+17:56,18:33,希望ヶ丘,1番,480,37,1B
+18:03,18:33,台新,2番,440,30,1A
+18:25,18:53,市役所,1番,440,28,1-1,1
+18:30,19:00,台新,2番,440,30,1A
+18:43,19:20,希望ヶ丘,1番,480,37,1B
+19:17,19:45,市役所,1番,440,28,1-1,1
+19:43,20:17,希望ヶ丘,1番,480,37,1B,1
+20:00,20:27,台新,2番,440,30,1A,1
+20:27,20:52,台新,2番,440,25,1A
+20:43,21:15,希望ヶ丘,1番,480,32,1B,1
+`;
+
+// ===================================
+// 時刻表読み込み
+// ===================================
+
+function parseTimetable(raw) {
+  return raw.trim().split("\n").map(line => {
+    const [
+      departure, arrival, via, platform,
+      fare, duration, route, yearStop
+    ] = line.trim().split(",");
+
+    return {
+      departure,
+      arrival,
+      via,
+      platform,
+      fare: Number(fare),
+      duration: Number(duration),
+      route,
+      yearStop: yearStop === "1"
+    };
+  });
+}
+
+const weekdayData = parseTimetable(weekdayRaw);
+const holidayData = parseTimetable(holidayRaw);
+let currentResults = [];
+
+// ===================================
+// 日付の初期設定・曜日判定
+// ===================================
+
+function localDateString(date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+const dateInput = document.getElementById("date");
+const today = new Date();
+
+dateInput.value = localDateString(today);
+
+function updateServiceType() {
+  if (!dateInput.value) return;
+
+  const date = new Date(dateInput.value + "T12:00:00");
+  const day = date.getDay();
+
+  document.getElementById("serviceType").value =
+    (day === 0 || day === 6) ? "holiday" : "weekday";
+}
+
+dateInput.addEventListener("change", () => {
+  updateServiceType();
+});
+
+updateServiceType();
+
+// ===================================
+// 時刻変換・HTMLエスケープ
+// ===================================
+
+function timeToMinutes(time) {
+  const [h, m] = time.split(":").map(Number);
+  return h * 60 + m;
+}
+
+function escapeHTML(value) {
+  return String(value).replace(/[&<>"']/g, char => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;"
+  })[char]);
+}
+
+// ===================================
+// 公式時刻表へのリンク
+// ===================================
+
+function officialTimetableURL(stopName) {
+  return "https://busget.fukushima-koutu.co.jp/fromto/find/?f_from="
+    + encodeURIComponent(stopName);
+}
+
+function showOfficialSearch(fromValue, toValue) {
+  const area = document.getElementById("tripList");
+  const safeFrom = escapeHTML(fromValue);
+  const safeTo = escapeHTML(toValue);
+  const url = officialTimetableURL(fromValue);
+
+  area.innerHTML = `
+    <div class="no-result">
+      <strong>この区間はアプリ内に時刻表がありません。</strong>
+      <br><br>
+
+      出発地：${safeFrom}<br>
+      到着地：${safeTo}<br><br>
+
+      公式サイトで出発地を選択したあと、
+      到着地「${safeTo}」を選択してください。
+
+      <a class="official-button"
+         href="${url}"
+         target="_blank"
+         rel="noopener">
+        この区間の公式時刻表を確認 ↗
+      </a>
+
+      <p class="small-note">
+        福島交通公式サイトで発着時刻・運賃を確認できます。
+        到着地は公式サイト側で選択してください。
+      </p>
+    </div>
+  `;
+}
+
+// ===================================
+// バス検索
+// ===================================
+
+function searchRoute() {
+  const fromValue = document.getElementById("from").value.trim();
+  const toValue = document.getElementById("to").value.trim();
+  const dateValue = dateInput.value;
+  const timeValue = document.getElementById("time").value;
+  const serviceType = document.getElementById("serviceType").value;
+
+  const resultArea = document.getElementById("tripList");
+  const condition = document.getElementById("condition");
+  const detailArea = document.getElementById("detailArea");
+
+  currentResults = [];
+  detailArea.innerHTML = "";
+
+  if (!fromValue || !toValue) {
+    resultArea.innerHTML = `
+      <div class="no-result">出発地と到着地を入力してください。</div>
+    `;
+    return;
+  }
+
+  if (fromValue === toValue) {
+    resultArea.innerHTML = `
+      <div class="no-result">出発地と到着地が同じです。別の停留所を選んでください。</div>
+    `;
+    return;
+  }
+
+  if (!dateValue || !timeValue) {
+    resultArea.innerHTML = `
+      <div class="no-result">乗車日と時刻を入力してください。</div>
+    `;
+    return;
+  }
+
+  condition.textContent =
+    `${fromValue} → ${toValue} ／ ${dateValue} ／ ${
+      serviceType === "weekday" ? "平日ダイヤ" : "土日祝ダイヤ"
+    } ／ ${timeValue}以降`;
+
+  // 現在アプリ内に登録されている区間
+  if (fromValue !== "御前" || toValue !== "郡山駅前") {
+    showOfficialSearch(fromValue, toValue);
+    return;
+  }
+
+  const selectedDate = new Date(dateValue + "T12:00:00");
+  const month = selectedDate.getMonth() + 1;
+  const day = selectedDate.getDate();
+
+  const isYearEnd =
+    (month === 12 && day >= 31) ||
+    (month === 1 && day <= 3);
+
+  let timetable =
+    serviceType === "weekday" ? weekdayData : holidayData;
+
+  if (isYearEnd) {
+    timetable = timetable.filter(bus => !bus.yearStop);
+  }
+
+  const searchMinutes = timeToMinutes(timeValue);
+
+  const results = timetable.filter(bus =>
+    timeToMinutes(bus.departure) >= searchMinutes
+  );
+
+  currentResults = results;
+
+  if (!results.length) {
+    resultArea.innerHTML = `
+      <div class="no-result">
+        該当するバスが見つかりませんでした。<br>
+        時刻を早めて、もう一度検索してみてください。
+      </div>
+    `;
+    return;
+  }
+
+  resultArea.innerHTML = `
+    <p class="small-note">
+      ※この区間のアプリ内登録データです。最新の公式時刻との照合が必要です。
+    </p>
+  ` + results.map((bus, index) => `
+    <div class="trip" onclick="showBusDetail(${index})" style="cursor:pointer">
+      <div class="trip-top">
+        <div class="time">${escapeHTML(bus.departure)}</div>
+        <div class="arrival">
+          到着予定<br>
+          <strong style="font-size:20px;color:#222">
+            ${escapeHTML(bus.arrival)}
+          </strong>
+        </div>
+      </div>
+
+      <div class="trip-line">
+        <span>${escapeHTML(fromValue)}</span>
+        <div class="line"></div>
+        <span>${escapeHTML(toValue)}</span>
+      </div>
+
+      <div class="tags">
+        <span class="tag blue">${escapeHTML(bus.platform)}のりば</span>
+        <span class="tag">${escapeHTML(bus.via)}経由</span>
+        <span class="tag">${bus.duration}分</span>
+        <span class="tag green">${bus.fare}円</span>
+        <span class="tag">系統 ${escapeHTML(bus.route)}</span>
+      </div>
+
+      <div style="text-align:right;color:#3478f6;font-size:12px;margin-top:12px">
+        詳細を見る →
+      </div>
+    </div>
+  `).join("");
+}
+
+// ===================================
+// バス詳細
+// ===================================
+
+function showBusDetail(index) {
+  const bus = currentResults[index];
+  if (!bus) return;
+
+  const fromValue = document.getElementById("from").value.trim();
+  const toValue = document.getElementById("to").value.trim();
+  const detailArea = document.getElementById("detailArea");
+
+  detailArea.innerHTML = `
+    <div class="detail-panel" id="busDetail">
+      <h2>バスの詳細</h2>
+
+      <div class="detail-row">
+        <span class="detail-label">出発地</span>
+        <span class="detail-value">${escapeHTML(fromValue)}</span>
+      </div>
+
+      <div class="detail-row">
+        <span class="detail-label">出発時刻</span>
+        <span class="detail-value">${escapeHTML(bus.departure)}</span>
+      </div>
+
+      <div class="detail-row">
+        <span class="detail-label">到着地</span>
+        <span class="detail-value">${escapeHTML(toValue)}</span>
+      </div>
+
+      <div class="detail-row">
+        <span class="detail-label">到着時刻</span>
+        <span class="detail-value">${escapeHTML(bus.arrival)}</span>
+      </div>
+
+      <div class="detail-row">
+        <span class="detail-label">経由</span>
+        <span class="detail-value">${escapeHTML(bus.via)}</span>
+      </div>
+
+      <div class="detail-row">
+        <span class="detail-label">のりば</span>
+        <span class="detail-value">${escapeHTML(bus.platform)}</span>
+      </div>
+
+      <div class="detail-row">
+        <span class="detail-label">運賃</span>
+        <span class="detail-value">${bus.fare}円</span>
+      </div>
+
+      <div class="detail-row">
+        <span class="detail-label">所要時間</span>
+        <span class="detail-value">約${bus.duration}分</span>
+      </div>
+
+      <div class="detail-row">
+        <span class="detail-label">系統</span>
+        <span class="detail-value">${escapeHTML(bus.route)}</span>
+      </div>
+    </div>
+  `;
+
+  detailArea.scrollIntoView({
+    behavior: "smooth",
+    block: "start"
+  });
+}
+
+// ===================================
+// 初期検索
+// ===================================
+
+searchRoute();
+</script>
+</body>
+</html>
